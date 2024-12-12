@@ -11,14 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('papan_bungas', function (Blueprint $table) {
+        Schema::create('order_products', function (Blueprint $table) {
             $table->id();
-            $table->string('nama');
-            $table->string('slug')->unique();
-            $table->longText('deskripsi')->nullable();
-            $table->string('image')->nullable();
-            $table->decimal('harga');
-            $table->boolean('is_tersedia')->default(true);
+            $table->foreignUuid('order_id')->constrained()->onDelete('cascade');
+            $table->foreignId('papan_bungas_id')->constrained()->onDelete('cascade');
+            $table->decimal('harga', 10, 2);
             $table->timestamps();
         });
     }
@@ -28,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('papan_bungas');
+        Schema::dropIfExists('order_products');
     }
 };

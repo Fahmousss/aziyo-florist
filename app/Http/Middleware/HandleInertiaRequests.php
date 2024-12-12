@@ -34,8 +34,16 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'auth' => [
                 'user' => $request->user(),
+                'admin' => $request->user()?->hasRole(['super_admin', 'admin', 'owner']),
+                'cart_count' => $request->user()
+                    ? $request->user()
+                    ->orders()
+                    ->where('status', 'belum_dibayar')
+                    ->withCount('orderProducts')
+                    ->first()?->order_products_count ?? null
+                    : null,
             ],
-            'ziggy' => fn () => [
+            'ziggy' => fn() => [
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),
             ],

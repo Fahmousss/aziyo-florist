@@ -11,14 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('papan_bungas', function (Blueprint $table) {
+        Schema::create('transactions', function (Blueprint $table) {
             $table->id();
-            $table->string('nama');
-            $table->string('slug')->unique();
-            $table->longText('deskripsi')->nullable();
-            $table->string('image')->nullable();
-            $table->decimal('harga');
-            $table->boolean('is_tersedia')->default(true);
+            $table->foreignUuid('order_id')->constrained()->onDelete('cascade');
+            $table->string('transaction_id')->unique();
+            $table->string('payment_status')->default('pending');
+            $table->string('payment_type');
+            $table->string('payment_url')->nullable();
             $table->timestamps();
         });
     }
@@ -28,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('papan_bungas');
+        Schema::dropIfExists('transactions');
     }
 };
