@@ -24,7 +24,7 @@ class Order extends Model
 
 
 
-    public function users()
+    public function user()
     {
         return $this->belongsTo(User::class);
     }
@@ -44,5 +44,10 @@ class Order extends Model
         static::creating(function ($model) {
             $model->id = Str::uuid();
         });
+    }
+
+    public function transactions()
+    {
+        return $this->hasOne(Transaction::class);
     }
 }

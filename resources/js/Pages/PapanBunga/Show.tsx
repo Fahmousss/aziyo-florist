@@ -5,6 +5,7 @@ import { Transition } from '@headlessui/react';
 import { ShoppingCartIcon } from '@heroicons/react/24/solid';
 import { Head, useForm } from '@inertiajs/react';
 import { FormEventHandler, useState } from 'react';
+import toast from 'react-hot-toast';
 
 export default function Show({
     auth,
@@ -45,7 +46,11 @@ export default function Show({
     const addToCart: FormEventHandler = (e) => {
         // console.log(e);
         e.preventDefault();
-        post(route('pb.addToCart', { slug: papanBunga.slug }));
+        post(route('pb.addToCart', { slug: papanBunga.slug }), {
+            onSuccess: () => {
+                toast.success('Berhasil ditambahkan');
+            },
+        });
         // router.get('/dashboards');
     };
 

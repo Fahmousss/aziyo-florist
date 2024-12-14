@@ -3,7 +3,9 @@
 use App\Http\Controllers\Order\OrderController;
 use App\Http\Controllers\PapanBunga\PapanBungaController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\TransactionController;
 use App\Models\PapanBunga;
+use App\Models\Transaction;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -39,7 +41,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/orders/{orderId}', [OrderController::class, 'checkout'])->name('orders.checkout');
     Route::delete('/orders/{orderId}', [OrderController::class, 'destroy'])->name('orders.removeOrder');
     Route::delete('/orders/{orderId}/{orderProductId}', [OrderController::class, 'removeItem'])->name('orders.removeItem');
+    Route::post('/orders/{orderId}/pay', [OrderController::class, 'makePay'])->name('orders.makePay');
     Route::patch('/orders/{orderId}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
+    Route::get('/webhook/midtrans', [TransactionController::class, 'handle'])->name('transactions.midtrans');
 });
 
 require __DIR__ . '/auth.php';

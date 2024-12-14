@@ -23,7 +23,7 @@ class PapanBungaFactory extends Factory
             'nama' => $nama,
             'slug' => Str::slug($nama),
             'deskripsi' => fake()->text(30),
-            'harga' => fake()->randomFloat(2, 100000, 400000),
+            'harga' => 300000,
             'is_tersedia' => fake()->boolean(60)
         ];
     }

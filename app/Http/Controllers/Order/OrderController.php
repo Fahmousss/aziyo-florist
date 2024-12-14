@@ -6,26 +6,38 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderProduct;
 use App\Models\PapanBunga;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
+use Midtrans\Snap;
 
 class OrderController extends Controller
 {
+
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
         $orders = Order::where('user_id', Auth::id())
-            ->with('orderProducts.papanBungas')
+            ->with('orderProducts.papanBungas', 'transactions')
             ->get();
 
         return Inertia::render('Dashboard', ['orders' => $orders]);
         // dd($orders);
+    }
+
+    public function __construct()
+    {
+        \Midtrans\Config::$serverKey    = config('services.midtrans.serverKey');
+        \Midtrans\Config::$isProduction = config('services.midtrans.isProduction');
+        \Midtrans\Config::$isSanitized  = config('services.midtrans.isSanitized');
+        \Midtrans\Config::$is3ds        = config('services.midtrans.is3ds');
     }
 
     /**
@@ -41,7 +53,7 @@ class OrderController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $request->validate([
             "user_id" => "required|exists:users,id",
             "papanBunga_id" => "required|exists:papan_bungas,id",
             // "harga" => "required"
@@ -56,15 +68,12 @@ class OrderController extends Controller
             $order = Order::firstOrCreate(
                 [
                     'user_id' => $request->user_id,
-                    'status' => 'belum_dibayar'
+                    'status' => 'keranjang'
                 ],
                 [
                     'total_harga' => 0
                 ]
             );
-
-            // // Check if this book already exists in order items
-            // $existingItem = $order->orderItems()->where('papan_bungas_id', $pb->id)->first();
 
             // Create new order item
             $order->orderProducts()->create([
@@ -79,7 +88,7 @@ class OrderController extends Controller
                 })
             ]);
 
-            return Redirect::back()->with('success', 'Book added to cart successfully!');
+            return Redirect::back()->with('success', 'Pesanan berhasil ditambahkan');
         });
     }
 
@@ -121,14 +130,22 @@ class OrderController extends Controller
     public function cancel(string $orderId)
     {
         return DB::transaction(function () use ($orderId) {
-            $order = Order::with('orderProducts.papaBungas')->findOrFail($orderId);
+            $order = Order::with('orderProducts.papanBungas')->findOrFail($orderId);
             // Gate::authorize('update', $order);
+            $secret = base64_encode(env('MIDTRANS_SERVER_KEY'));
 
-            $order->update([
-                'status' => 'cancelled',
-            ]);
+            $response = Http::withHeaders([
+                'Accept' => 'application/json',
+                'Content-Type' => 'application/json',
+                'Authorization' => "Basic $secret"
+            ])->post("https://api.sandbox.midtrans.com/v2/$orderId/cancel");
 
-            return Redirect::back()->with('success', 'Order cancelled successfully!');
+            // $response = json_decode($response->body());
+            // dd($response);
+
+            $order->delete();
+
+            return Redirect::back()->with('success');
         });
     }
 
@@ -156,7 +173,7 @@ class OrderController extends Controller
         return DB::transaction(function () use ($orderId) {
             $order = Order::where('user_id', Auth::id())
                 ->where('id', $orderId)
-                ->where('status', 'belum_dibayar')
+                ->where('status', 'keranjang')
                 ->with('orderProducts.papanBungas')
                 ->firstOrFail();
 
@@ -185,6 +202,95 @@ class OrderController extends Controller
 
             // return Redirect::route('dashboard')
             //     ->with('success', 'Order completed successfully!');
+        });
+    }
+    public function makePay(Request $request, string $orderId)
+    {
+        return DB::transaction(function () use ($request, $orderId) {
+
+            $is_existing_null = Transaction::where('transaction_id', 'null')->first();
+
+            if ($is_existing_null) {
+                // return Inertia::location($is_existing->payment_url);
+                return redirect()->back()->withErrors(['message' => 'Harap selesaikan pembayaran sebelumnya']);
+            }
+
+            $request->validate([
+                'address' => 'nullable|string',
+            ]);
+
+            $user = Auth::user();
+            $order = Order::where('user_id', Auth::id())
+                ->where('id', $orderId)
+                ->where('status', 'keranjang')
+                ->with('orderProducts.papanBungas')
+                ->firstOrFail();
+
+            // Calculate admin tax (10%)
+            function convertToInteger($decimalString)
+            {
+                $numberWithoutCommas = str_replace(',', '', $decimalString);
+                return (int) floatval($numberWithoutCommas);
+            }
+            $adminTax = $order->total_harga * 0.10;
+            $finalTotal = $order->total_harga + $adminTax;
+
+            // Update order with address and final total
+            $order->update([
+                'status' => 'pending',
+                'address' => $request->address ?: $user->address,
+                'total_price' => $finalTotal,
+            ]);
+
+            $params = [
+                'transaction_details' => [
+                    'order_id' => $orderId,
+                    'gross_amount' => convertToInteger($finalTotal),
+                ],
+                'customer_details' => [
+                    'first_name' => $user->name,
+                    'email' => $user->email,
+                    'shipping_address' => [
+                        'address' => $request->address ?: $user->address,
+                    ],
+                ],
+                'item_details' => $order->orderProducts->map(function ($item) {
+                    return [
+                        'id' => $item->id, // Use product_id or a unique identifier
+                        'price' => convertToInteger($item->harga * 1.10), // Price per item
+                        'quantity' => 1, // Quantity purchased
+                        'name' => $item->papanBungas->nama, // Name of the product
+                    ];
+                })->toArray(),
+                'enabled_payments' => ['echannel', 'gopay', 'shopeepay', 'other_qris']
+            ];
+
+            try {
+                $secret = base64_encode(env('MIDTRANS_SERVER_KEY'));
+
+                $response = Http::withHeaders([
+                    'Accept' => 'application/json',
+                    'Content-Type' => 'application/json',
+                    'Authorization' => "Basic $secret"
+                ])->post("https://app.sandbox.midtrans.com/snap/v1/transactions", $params);
+
+                $response = json_decode($response->body());
+
+                // dd($response);
+
+                // Save transaction details
+                Transaction::create([
+                    'order_id' => $orderId,
+                    'transaction_id' => 'null',
+                    'payment_status' => 'pending',
+                    'payment_url' => $response->redirect_url,
+                ]);
+
+                // Auto-redirect to payment URL
+                return Inertia::location($response->redirect_url);
+            } catch (\Exception $e) {
+                return back()->withErrors(['message' => $e->getMessage()]);
+            }
         });
     }
 }

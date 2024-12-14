@@ -12,6 +12,7 @@ export default function Register() {
         email: '',
         password: '',
         password_confirmation: '',
+        address: '',
     });
 
     const submit: FormEventHandler = (e) => {
@@ -42,6 +43,21 @@ export default function Register() {
                     />
 
                     <InputError message={errors.name} className="mt-2" />
+                </div>
+
+                <div className="mt-4">
+                    <InputLabel htmlFor="address" value="Address" />
+
+                    <TextInput
+                        id="address"
+                        name="address"
+                        value={data.address}
+                        className="mt-1 block w-full"
+                        onChange={(e) => setData('address', e.target.value)}
+                        required
+                    />
+
+                    <InputError message={errors.address} className="mt-2" />
                 </div>
 
                 <div className="mt-4">

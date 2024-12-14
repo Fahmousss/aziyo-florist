@@ -26,6 +26,15 @@ export interface OrderProduct {
     harga: number;
 }
 
+export interface Transaction {
+    id: number;
+    order_id: string;
+    transaction_id: string;
+    payment_status: string;
+    payment_type: string;
+    payment_url:string;
+}
+
 export interface Order {
     id: string;
     status: string;
@@ -33,6 +42,7 @@ export interface Order {
     order_products: OrderProduct[];
     address: string;
     total_harga: number;
+    transactions: Transaction | null;
 }
 
 

@@ -6,6 +6,9 @@ import { PageProps as AppPageProps } from './';
 declare global {
     interface Window {
         axios: AxiosInstance;
+        snap: {
+            pay: (token: string, options: Record<string, any>) => void;
+          };
     }
 
     /* eslint-disable no-var */

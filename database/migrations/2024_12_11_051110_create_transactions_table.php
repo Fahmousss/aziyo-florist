@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignUuid('order_id')->constrained()->onDelete('cascade');
             $table->string('transaction_id')->unique();
             $table->string('payment_status')->default('pending');
-            $table->string('payment_type');
+            $table->string('payment_type')->nullable();
             $table->string('payment_url')->nullable();
             $table->timestamps();
         });

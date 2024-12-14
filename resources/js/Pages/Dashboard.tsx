@@ -11,23 +11,36 @@ import {
 } from '@headlessui/react';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import { Head, router, useForm } from '@inertiajs/react';
+import { useEffect } from 'react';
+import toast from 'react-hot-toast';
 
 export default function Dashboard({
     auth,
     orders,
+    flash,
 }: {
     auth: any;
     orders: Order[];
+    flash: any;
 }) {
     const orderStatuses = [
-        'belum_dibayar',
-        'menunggu_verifikasi',
+        'keranjang',
+        'pending',
         'lunas',
-        // 'delivered',
-        // 'cancelled',
+        'delivered',
+        'dibatalkan',
     ];
 
     const { patch, processing, errors, setError } = useForm({});
+
+    useEffect(() => {
+        if (flash?.success) {
+            toast.success(flash.success);
+        }
+        if (flash?.error) {
+            toast.error(flash.error);
+        }
+    }, [flash]);
 
     return (
         <MainLayout
@@ -79,12 +92,12 @@ export default function Dashboard({
                                                         <span
                                                             className={`font-semibold uppercase ${
                                                                 order.status ===
-                                                                'cancelled'
+                                                                'dibatalkan'
                                                                     ? 'text-red-500'
                                                                     : order.status ===
                                                                             'delivered' ||
                                                                         order.status ===
-                                                                            'shipped'
+                                                                            'lunas'
                                                                       ? 'text-green-500'
                                                                       : 'text-yellow-500'
                                                             }`}
@@ -127,7 +140,7 @@ export default function Dashboard({
                                                                                     'Unavailable Book'}
                                                                             </p>
                                                                             {status ===
-                                                                                'cart' && (
+                                                                                'keranjang' && (
                                                                                 <p className="text-sm text-red-500">
                                                                                     {!item
                                                                                         .papan_bungas
@@ -141,7 +154,7 @@ export default function Dashboard({
                                                                     <div className="flex items-center gap-4">
                                                                         <p>
                                                                             {status ===
-                                                                            'belum_dibayar'
+                                                                            'keranjang'
                                                                                 ? rupiah(
                                                                                       item.harga,
                                                                                   )
@@ -150,7 +163,7 @@ export default function Dashboard({
                                                                                   )}`}
                                                                         </p>
                                                                         {status ===
-                                                                            'belum_dibayar' && (
+                                                                            'keranjang' && (
                                                                             <div className="flex items-center gap-4">
                                                                                 <Button
                                                                                     className="rounded-md px-3 py-1 text-red-600 hover:text-red-700"
@@ -165,6 +178,14 @@ export default function Dashboard({
                                                                                                         item.id,
                                                                                                 },
                                                                                             ),
+                                                                                            {
+                                                                                                onFinish:
+                                                                                                    () => {
+                                                                                                        toast.success(
+                                                                                                            'Berhasil dihapus',
+                                                                                                        );
+                                                                                                    },
+                                                                                            },
                                                                                         );
                                                                                     }}
                                                                                 >
@@ -205,19 +226,23 @@ export default function Dashboard({
                                                             )}
                                                         {order.total_harga &&
                                                             status !==
-                                                                'belum_dibayar' && (
+                                                                'keranjang' && (
                                                                 <div className="space-y-1">
                                                                     <p className="text-sm text-gray-600 dark:text-gray-400">
                                                                         Subtotal:
-                                                                        $
-                                                                        {order.order_products.reduce(
-                                                                            (
-                                                                                acc,
-                                                                                item,
-                                                                            ) =>
-                                                                                acc +
-                                                                                item.harga,
-                                                                            0,
+                                                                        {rupiah(
+                                                                            order.order_products.reduce(
+                                                                                (
+                                                                                    acc,
+                                                                                    item,
+                                                                                ) =>
+                                                                                    acc +
+                                                                                    (Number(
+                                                                                        item.harga,
+                                                                                    ) ||
+                                                                                        0),
+                                                                                0,
+                                                                            ),
                                                                         )}
                                                                     </p>
                                                                     <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -227,7 +252,8 @@ export default function Dashboard({
                                                                     <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
                                                                         Total:
                                                                         {rupiah(
-                                                                            order.total_harga,
+                                                                            order.total_harga *
+                                                                                1.1,
                                                                         )}
                                                                     </p>
                                                                 </div>
@@ -235,7 +261,7 @@ export default function Dashboard({
                                                     </div>
                                                     <div>
                                                         {status ===
-                                                        'belum_dibayar' ? (
+                                                        'keranjang' ? (
                                                             <div className="flex gap-2">
                                                                 <Button
                                                                     className="inline-flex items-center gap-2 rounded-md px-3 py-1 text-red-600 hover:text-red-700"
@@ -245,6 +271,20 @@ export default function Dashboard({
                                                                                 'orders.removeOrder',
                                                                                 order.id,
                                                                             ),
+                                                                            {
+                                                                                onError:
+                                                                                    () => {
+                                                                                        toast.error(
+                                                                                            'Terjadi kesalahan',
+                                                                                        );
+                                                                                    },
+                                                                                onFinish:
+                                                                                    () => {
+                                                                                        toast.success(
+                                                                                            'Berhasil dibatalkan',
+                                                                                        );
+                                                                                    },
+                                                                            },
                                                                         );
                                                                     }}
                                                                 >
@@ -266,12 +306,14 @@ export default function Dashboard({
                                                                             processing
                                                                         }
                                                                         onClick={() => {
-                                                                            router.get(
-                                                                                route(
-                                                                                    'orders.checkout',
-                                                                                    order.id,
-                                                                                ),
-                                                                            );
+                                                                            {
+                                                                                router.get(
+                                                                                    route(
+                                                                                        'orders.checkout',
+                                                                                        order.id,
+                                                                                    ),
+                                                                                );
+                                                                            }
                                                                         }}
                                                                     >
                                                                         Checkout
@@ -281,20 +323,34 @@ export default function Dashboard({
                                                         ) : status !==
                                                               'delivered' &&
                                                           status !==
-                                                              'cancelled' ? (
-                                                            <Button
-                                                                className="rounded-md bg-red-500 px-3 py-1 text-white hover:bg-red-600"
-                                                                onClick={() => {
-                                                                    router.patch(
-                                                                        route(
-                                                                            'orders.cancel',
-                                                                            order.id,
-                                                                        ),
-                                                                    );
-                                                                }}
-                                                            >
-                                                                Cancel Order
-                                                            </Button>
+                                                              'dibatalkan' &&
+                                                          status !== 'lunas' ? (
+                                                            <>
+                                                                <Button
+                                                                    className="mr-3 rounded-md bg-blue-500 px-3 py-1 text-white hover:bg-blue-600"
+                                                                    onClick={(
+                                                                        e,
+                                                                    ) => {
+                                                                        window.location.href =
+                                                                            order.transactions!.payment_url;
+                                                                    }}
+                                                                >
+                                                                    Pay Now
+                                                                </Button>
+                                                                <Button
+                                                                    className="rounded-md bg-red-500 px-3 py-1 text-white hover:bg-red-600"
+                                                                    onClick={() => {
+                                                                        router.patch(
+                                                                            route(
+                                                                                'orders.cancel',
+                                                                                order.id,
+                                                                            ),
+                                                                        );
+                                                                    }}
+                                                                >
+                                                                    Cancel Order
+                                                                </Button>
+                                                            </>
                                                         ) : status ===
                                                           'delivered' ? (
                                                             <Button className="rounded-md bg-blue-500 px-3 py-1 text-white hover:bg-blue-600">
@@ -308,16 +364,17 @@ export default function Dashboard({
                                 ) : (
                                     <div className="py-8 text-center">
                                         <p className="text-xl font-semibold text-gray-400">
-                                            {status === 'belum_dibayar'
+                                            {status === 'keranjang'
                                                 ? 'Your cart is empty'
-                                                : status ===
-                                                    'menunggu_verifikasi'
+                                                : status === 'pending'
                                                   ? 'No pending orders'
-                                                  : status === 'lunas'
+                                                  : status === 'shipped'
                                                     ? 'No shipped orders'
-                                                    : 'No cancelled orders'}
+                                                    : status === 'delivered'
+                                                      ? 'No delivered orders'
+                                                      : 'No cancelled orders'}
                                         </p>
-                                        {status === 'belum_dibayar' && (
+                                        {status === 'keranjang' && (
                                             <Button
                                                 className="mt-4 rounded-md bg-red-500 px-4 py-2 text-white hover:bg-red-600"
                                                 onClick={() =>

@@ -38,7 +38,7 @@ class HandleInertiaRequests extends Middleware
                 'cart_count' => $request->user()
                     ? $request->user()
                     ->orders()
-                    ->where('status', 'belum_dibayar')
+                    ->where('status', 'keranjang')
                     ->withCount('orderProducts')
                     ->first()?->order_products_count ?? null
                     : null,
