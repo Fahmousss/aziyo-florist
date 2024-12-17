@@ -46,57 +46,7 @@ export default function SuccessOrder({
             },
         });
     };
-    // console.log(auth.user);
 
-    // const handlePrintInvoice = async () => {
-    //     try {
-    //         const response = await axios.post(
-    //             'https://cors-anywhere.herokuapp.com/https://api.sandbox.midtrans.com/v1/invoices',
-    //             {
-    //                 order_id: orders[0].id,
-    //                 invoice_number: uuidv4(),
-    //                 invoice_date: orders[0]?.created_at
-    //                     ? orders[0].created_at.split('T')[0]
-    //                     : new Date().toISOString().split('T')[0],
-    //                 due_date: getDueDate(
-    //                     orders[0]?.created_at || new Date().toISOString(),
-    //                 ),
-    //                 customers_detail: {
-    //                     id: auth.user.id,
-    //                     name: auth.user.name,
-    //                     email: auth.user.email,
-    //                     address: auth.user.address || '',
-    //                 },
-    //                 item_details: orders[0].order_products.map(
-    //                     (order: OrderProduct) => ({
-    //                         id: order.id || 'ITEM001',
-    //                         name: order.papan_bungas?.nama || 'Unnamed Item',
-    //                         price: order.harga || 0,
-    //                         quantity: 1,
-    //                     }),
-    //                 ),
-    //                 payment_type: 'payment_link',
-    //                 amount: orders[0].total_harga,
-    //             },
-    //             {
-    //                 headers: {
-    //                     Accept: 'application/json',
-    //                     Authorization: `Basic U0ItTWlkLXNlcnZlci1JdzRUaUV3WkkxenRTc19mb3VHMzdYbzc=`, // Replace with actual authorization key
-    //                 },
-    //             },
-    //         );
-
-    //         const invoiceUrl = response.data.pdf_url; // Assuming 'pdf_url' is in the response data
-    //         if (invoiceUrl) {
-    //             window.open(invoiceUrl, '_blank'); // Open invoice in new tab
-    //         } else {
-    //             alert('Failed to generate invoice.');
-    //         }
-    //     } catch (error) {
-    //         console.error('Error generating invoice:', error);
-    //         toast.error('An error occurred while creating the invoice.');
-    //     }
-    // };
     return (
         <>
             <Toaster />
