@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\OrderProduct;
 use App\Models\PapanBunga;
 use App\Models\Transaction;
+use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -131,19 +132,22 @@ class OrderController extends Controller
     {
         return DB::transaction(function () use ($orderId) {
             $order = Order::with('orderProducts.papanBungas')->findOrFail($orderId);
+            $transaction = Transaction::where('order_id', $orderId)->first();
+
             // Gate::authorize('update', $order);
+            // dd($orderId . $transaction);
             $secret = base64_encode(env('MIDTRANS_SERVER_KEY'));
-
-            $response = Http::withHeaders([
-                'Accept' => 'application/json',
-                'Content-Type' => 'application/json',
-                'Authorization' => "Basic $secret"
-            ])->post("https://api.sandbox.midtrans.com/v2/$orderId/cancel");
-
-            // $response = json_decode($response->body());
+            $client = new Client();
+            $response = $client->post("https://api.sandbox.midtrans.com/v2/$orderId/cancel", [
+                'headers' => [
+                    'Accept' => 'application/json',
+                    'Authorization' => "Basic $secret"
+                ],
+            ]);
             // dd($response);
 
-            $order->delete();
+            $order->update(['status' => 'dibatalkan']);
+            $transaction->update(['payment_status' => 'failed']);
 
             return Redirect::back()->with('success');
         });

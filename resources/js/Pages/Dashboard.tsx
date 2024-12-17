@@ -1,6 +1,6 @@
 import MainLayout from '@/Layouts/MainLayout';
 import { formatDate, rupiah } from '@/lib/utils';
-import { Order, OrderProduct } from '@/types';
+import { Order, OrderProduct, PageProps } from '@/types';
 import {
     Button,
     Tab,
@@ -18,11 +18,10 @@ export default function Dashboard({
     auth,
     orders,
     flash,
-}: {
-    auth: any;
+}: PageProps<{
     orders: Order[];
     flash: any;
-}) {
+}>) {
     const orderStatuses = [
         'keranjang',
         'pending',

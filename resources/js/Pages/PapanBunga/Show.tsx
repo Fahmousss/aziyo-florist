@@ -134,7 +134,7 @@ export default function Show({
                                 <div className="flex flex-row-reverse items-center gap-5 sm:flex-row">
                                     <div className="relative">
                                         <button
-                                            // disabled={processing}
+                                            disabled={processing}
                                             className="mt-4 flex h-full items-center gap-2 rounded-md bg-[#FF2D20] px-3 py-3 text-xs font-medium text-white transition-colors hover:bg-[#FF2D20]/80 sm:mr-6 sm:mt-0 sm:px-6 sm:py-3 sm:text-xl"
                                         >
                                             <ShoppingCartIcon className="h-4 w-4 sm:h-6 sm:w-6" />

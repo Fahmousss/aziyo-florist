@@ -6,8 +6,11 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TransactionController;
 use App\Models\PapanBunga;
 use App\Models\Transaction;
+use GuzzleHttp\Client;
 use Illuminate\Foundation\Application;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -44,6 +47,20 @@ Route::middleware('auth')->group(function () {
     Route::post('/orders/{orderId}/pay', [OrderController::class, 'makePay'])->name('orders.makePay');
     Route::patch('/orders/{orderId}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
     Route::get('/webhook/midtrans', [TransactionController::class, 'handle'])->name('transactions.midtrans');
+    Route::get('/success', [TransactionController::class, 'success'])->name('transactions.success');
+    Route::post('/print/invoice', function (Request $request) {
+        $secret = base64_encode(env('MIDTRANS_SERVER_KEY'));
+        dd($secret);
+        $response = Http::withHeaders([
+            'Accept' => 'application/json',
+            'Content-Type' => 'application/json',
+            'Authorization' => "Basic $secret"
+        ])->post("https://api.sandbox.midtrans.com/v1/invoices", $request->all());
+
+        $response = json_decode($response->body());
+
+        dd($response);
+    });
 });
 
 require __DIR__ . '/auth.php';

@@ -23,9 +23,6 @@ export default function Checkout({
 
     const submit: FormEventHandler = async (e) => {
         e.preventDefault();
-        // const secret = import.meta.env.MIDTRANS_SERVER_KEY;
-        // const encodeSecret = btoa(secret);
-        // console.log(encodeSecret);
 
         post(route('orders.makePay', order.id), {
             onSuccess: () => toast.success('Redirecting to payment gateway'),

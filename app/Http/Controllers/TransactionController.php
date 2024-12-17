@@ -7,6 +7,7 @@ use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
 
 class TransactionController extends Controller
@@ -39,6 +40,7 @@ class TransactionController extends Controller
                 return response()->json(['message' => 'Order or transaction not found'], 404);
             }
 
+
             switch ($transactionStatus) {
                 case 'capture':
                 case 'settlement':
@@ -49,6 +51,11 @@ class TransactionController extends Controller
                         'transaction_id' => $response->transaction_id,
                     ]);
                     $order->update(['status' => 'lunas']);
+                    $orders = Order::where('id', $request->order_id)
+                        ->with('orderProducts.papanBungas', 'transactions')
+                        ->get();
+
+                    return Inertia::render('Orders/SuccessOrder', ['orders' => $orders]);
                     break;
 
                 case 'pending':
@@ -82,5 +89,34 @@ class TransactionController extends Controller
         } catch (\Exception $e) {
             return back()->withErrors(['message' => $e->getMessage()]);
         }
+    }
+    public function success(Request $request)
+    {
+
+        $secret = base64_encode(env('MIDTRANS_SERVER_KEY'));
+
+        $response = Http::withHeaders([
+            'Accept' => 'application/json',
+            'Content-Type' => 'application/json',
+            'Authorization' => "Basic $secret"
+        ])->get("https://api.sandbox.midtrans.com/v2/$request->order_id/status");
+
+        $response = json_decode($response->body());
+
+        $transaction = Transaction::where('order_id', $request->order_id)->first();
+
+        $orders = Order::find($request->order_id);
+        $transaction->update([
+            'payment_status' => 'paid',
+            'payment_type' => $response->payment_type,
+            'transaction_id' => $response->transaction_id,
+        ]);
+        $orders->update(['status' => 'lunas']);
+        $orders = Order::where('id', $request->order_id)
+            ->with('orderProducts.papanBungas', 'transactions')
+            ->get();
+
+        // dd($orders);
+        return Inertia::render('Orders/SuccessOrder', ['orders' => $orders]);
     }
 }
