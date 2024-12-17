@@ -1,11 +1,10 @@
-import { Toaster } from '@/components/ui/toaster';
 import MainLayout from '@/Layouts/MainLayout';
 import { rupiah } from '@/lib/utils';
 import { Order, PageProps } from '@/types';
 import { Button } from '@headlessui/react';
 import { Head, useForm, usePage } from '@inertiajs/react';
 import { FormEventHandler, useState } from 'react';
-import toast from 'react-hot-toast';
+import toast, { Toaster } from 'react-hot-toast';
 
 export default function Checkout({
     auth,

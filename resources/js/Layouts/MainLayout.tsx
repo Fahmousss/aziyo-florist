@@ -1,5 +1,4 @@
 import Dropdown from '@/Components/Dropdown';
-// import { Toaster } from '@/components/ui/toaster';
 import { ShoppingCartIcon } from '@heroicons/react/24/outline';
 import { Link } from '@inertiajs/react';
 import { Toaster } from 'react-hot-toast';
